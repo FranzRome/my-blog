@@ -1,31 +1,62 @@
 <script>
+
 export default {
   name: 'BlogPostCard',
   props: {
-    content: {
-      type: String,
-      required: true,
-      default: ''
+    blogData: {
+      type: Object,
+      required: true
     }
   },
   data() {
     return {
-      state_content: this.content
+      content: '',
+      isBold: false,
+      isItalic: false,
+      isUnderline: false
     };
   },
   methods: {
     typeCharacter(event) {
-      if(event.key.length == 1) {
-         this.state_content += event.key;
-      } else if(event.key === 'Backspace'){
-         this.cancel();
+      if (event.key.length === 1) {
+        let char = event.key;
+        if (this.isBold) char = `<b>${char}</b>`;
+        if (this.isItalic) char = `<i>${char}</i>`;
+        if (this.isUnderline) char = `<u>${char}</u>`;
+        
+        this.content += char;
+      } else if (event.key === 'Enter') {
+         this.content += '<br>';
+      } else if (event.key === 'Backspace') {
+        this.cancel();
       }
     },
     cancel() {
-      this.state_content = this.state_content.slice(0, -1);
-    }
+      this.content = this.content.slice(0, -1);
+    },
+    toggleBold() {
+      this.isBold = !this.isBold;
+    },
+    toggleItalic() {
+      this.isItalic = !this.isItalic;
+    },
+    toggleUnderline() {
+      this.isUnderline = !this.isUnderline;
+    },
+    fetchContent() {
+      this.content = this.blogData.content.map((item) => {
+        if (item.tag === 'img') {
+          return `<img src="${item.content}" width="${item.width}" />`;
+        } else if (item.tag === 'a') {
+          return `<a href="${item.href}">${item.content}</a>`;
+        } else {
+          return `<${item.tag}>${item.content || ''}</${item.tag}>`;
+        }
+      }).join('');
+    },
   },
   mounted() {
+   this.fetchContent();
     window.addEventListener('keydown', this.typeCharacter);
   },
   beforeUnmount() {
@@ -35,31 +66,30 @@ export default {
 </script>
 
 <template>
-  <div>
-    <div class="toolbar">
+    <!-- TOOLBAR -->>
+    <section class="toolbar">
       <div class="toolbar-left">
         <div class="style-preset-dropdown">Heading 1 ▼</div>
       </div>
       <div class="toolbar-center">
-        <div class="button bold">B</div>
-        <div class="button italic">I</div>
-        <div class="button underline">U</div>
-        <div class="button attachment"></div>
-        <div class="button color"></div>
+        <div class="button bold" @click="toggleBold">B</div>
+        <div class="button italic" @click="toggleItalic">I</div>
+        <div class="button underline" @click="toggleUnderline">U</div>
       </div>
       <div class="toolbar-right">
         <div class="button align-left"></div>
         <div class="button align-center"></div>
         <div class="button align-right"></div>
       </div>
-    </div>
-    <section class="edit-section">
-      <p>{{ state_content }}</p>
     </section>
-  </div>
+    <!-- CONTENT -->
+    <section class="edit-section">
+      <div v-html="content"></div>
+    </section>
 </template>
 
 <style scoped>
+
 .toolbar{
    position: fixed;
    top: 2vw;
@@ -155,6 +185,10 @@ export default {
 }
 
 .edit-section{
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   text-align: center;
    position: relative;
    left: 50%;
    top: 8vw;
@@ -163,7 +197,7 @@ export default {
    height: 100vw;
    z-index: -1;
    border-radius: 2vw;
-   padding: 40px 2vw;
+   padding: 40px 6vw;
    background-color: #F5F5F5;
 }
 </style>
