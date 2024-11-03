@@ -1,123 +1,49 @@
 <script>
+import { Editor, EditorContent } from '@tiptap/vue-3';
+import StarterKit from '@tiptap/starter-kit';
+import TextStyle from '@tiptap/extension-text-style';
+import Document from '@tiptap/extension-document';
+import Paragraph from '@tiptap/extension-paragraph';
+import Text from '@tiptap/extension-text';
+
 export default {
-  name: 'BlogPostCard',
-  props: {
-    blogData: {
-      type: Object,
-      required: true
-    }
+  components: {
+    EditorContent,
   },
+
   data() {
     return {
-      content: '',
-      isBold: false,
-      isItalic: false,
-      isUnderline: false,
-      fontSize: 12
-    };
-  },
-  methods: {
-    typeCharacter(event) {
-      if (event.key.length === 1) {
-        let char = event.key;
-        if (this.isBold) char = `<b>${char}</b>`;
-        if (this.isItalic) char = `<i>${char}</i>`;
-        if (this.isUnderline) char = `<u>${char}</u>`;
-
-        this.content += char;
-      } else if (event.key === 'Enter') {
-        this.content += '<br>';
-      } else if (event.key === 'Backspace') {
-        this.cancel();
-      }
-    },
-    cancel() {
-      this.content = this.content.slice(0, -1);
-    },
-    toggleBold() {
-      this.isBold = !this.isBold;
-      document.execCommand('bold');
-      this.syncContent();
-    },
-    toggleItalic() {
-      this.isItalic = !this.isItalic;
-      document.execCommand('underline');
-    },
-    toggleUnderline() {
-      this.isUnderline = !this.isUnderline;
-      document.execCommand('underline');
-      this.syncContent();
-    },
-    fetchContent() {
-      this.content = this.blogData.content.map((item) => {
-        if (item.tag === 'img') {
-          return `<img src="${item.content}" width="${item.width}" />`;
-        } else if (item.tag === 'a') {
-          return `<a href="${item.href}" target="_blank" style = "user-select:initial">${item.content}</a>`;
-        } else {
-          return `<${item.tag}>${item.content || ''}</${item.tag}>`;
-        }
-      }).join('');
-    },
-    syncContent() {
-      this.content = this.$refs.editSection.innerHTML;
-      console.log('New content:\n' + this.content)
-    },
-    handleLinkClick(event) {
-      const target = event.target;
-      console.log(target);
-
-      if (target.tagName === 'A') {
-        window.open(target.href, '_blank');
-      }
-    },
-    setFontSize() {
-    // Cambia la dimensione del font per il contenuto selezionato
-    document.execCommand('fontSize', false, this.fontSize);
-    const fontSizeElements = this.$refs.editSection.getElementsByTagName('font');
-
-    // Cambia la dimensione di font in base al valore della fontSize nel data
-    for (let i = 0; i < fontSizeElements.length; i++) {
-      fontSizeElements[i].size = this.fontSize; // Imposta la dimensione del font
-    }
-    this.syncContent(); // Sincronizza il contenuto
-  },
-  increaseFontSize() {
-    if (this.fontSize < 72) { // Limita la dimensione massima
-      this.fontSize++;
-      this.setFontSize();
+      editor: new Editor({
+        content: '<p>I’m running Tiptap with Vue.js. 🎉</p>',
+        extensions: [StarterKit, TextStyle, Document, Paragraph, Text],
+        autofocus: true,
+        editable: true,
+        injectCSS: false,
+      }),
     }
   },
-  decreaseFontSize() {
-    if (this.fontSize > 1) { // Limita la dimensione minima
-      this.fontSize--;
-      this.setFontSize();
-    }
-  }
-  },
+
   mounted() {
-    this.fetchContent();
-    //window.addEventListener('keydown', this.typeCharacter);
-    this.$refs.editSection.addEventListener('click', this.handleLinkClick);
   },
+
   beforeUnmount() {
-    // Event listeners removal to prevent memory leak
-    //window.removeEventListener('keydown', this.typeCharacter);
-    this.$refs.editSection.removeEventListener('click', this.handleLinkClick);
-  }
-};
+    this.editor.destroy()
+  },
+}
 </script>
 
 <template>
-  <!-- TOOLBAR -->>
+  <!-- TOOLBAR -->
   <section class="toolbar">
     <div class="toolbar-left">
       <div class="style-preset-dropdown">Heading 1 ▼</div>
     </div>
     <div class="toolbar-center">
-      <div class="button bold" @click="toggleBold">B</div>
-      <div class="button italic" @click="toggleItalic">I</div>
-      <div class="button underline" @click="toggleUnderline">U</div>
+      <button class="button bold" @click="editor.chain().focus().toggleBold().run()"
+        :class="{ 'is-active': editor.isActive('bold') }">B</button>
+      <button class="button italic" @click="editor.chain().focus().toggleItalic().run()"
+        :class="{ 'is-active': editor.isActive('italic') }">I</button>
+      <!--button class="button underline" @click="editor.chain().focus().toggleUnderline().run()" :class="{ 'is-active': editor.isActive('underline') }">U</button-->
     </div>
     <div class="toolbar-right">
       <div class="font-size-container">
@@ -131,8 +57,7 @@ export default {
     </div>
   </section>
   <!-- CONTENT -->
-  <section ref="editSection" class="edit-section" contenteditable="true" @input="syncContent">
-  </section>
+  <editor-content :editor="editor" class="edit-section" />
 </template>
 
 <style scoped>
@@ -199,6 +124,14 @@ a {
   box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.1);
 }
 
+.button-selected:hover {
+  background-color: #BFBFBF;
+}
+
+.button-selected {
+  background-color: #AEAEAE;
+}
+
 .bold {
   font-weight: 700;
 }
@@ -221,7 +154,7 @@ a {
   background: linear-gradient(#aaaaaa, black);
 }
 
-.font-size-container{
+.font-size-container {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -234,16 +167,16 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  border:solid 1.5px #757575;
+  border: solid 1.5px #757575;
   border-radius: 8px;
   font-size: 0.8vw;
   font-weight: 700;
   background-color: white;
 }
 
-.font-size-minus::before{
+.font-size-minus::before {
   aspect-ratio: 2/3;
-  width:1.3vw;
+  width: 1.3vw;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -256,9 +189,9 @@ a {
   transition: 0.3s;
 }
 
-.font-size-plus::after{
+.font-size-plus::after {
   aspect-ratio: 2/3;
-  width:1.3vw;
+  width: 1.3vw;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -271,13 +204,11 @@ a {
   transition: 0.3s;
 }
 
-.font-size-plus:hover{
-  .font-size.plus::after{
+.font-size-plus:hover {
+  .font-size.plus::after {
     background-color: #757575;
   }
 }
-
-
 
 .align-left {
   background-image: url(../assets/align_left.png);
@@ -295,10 +226,6 @@ a {
 }
 
 .edit-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
   position: relative;
   left: 50%;
   top: 8vw;
