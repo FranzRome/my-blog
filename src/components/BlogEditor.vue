@@ -23,7 +23,21 @@ export default {
     }
   },
 
-  mounted() {
+  methods: {
+    savePost(filename) {
+      const json = this.editor.getJSON()
+      console.log(typeof json);
+
+      const blob = new Blob([json], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `./${filename}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   },
 
   beforeUnmount() {
@@ -58,6 +72,8 @@ export default {
   </section>
   <!-- CONTENT -->
   <editor-content :editor="editor" class="edit-section" />
+  <!-- BUTTONS -->
+  <button class="button" @click="savePost('test')">Save</button>
 </template>
 
 <style scoped>
